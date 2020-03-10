@@ -45,11 +45,11 @@ class TelegramBridge(Node):
         :param callback_function: A callback function taking a telegram.Bot and a telegram.Update
         :return: Wrapped callback function
         """
-        return callback_function
+        # return callback_function
 
         # @functools.wraps(callback_function)
-        # def wrapper(self, update, context):
-        #     self.get_logger().info("Incoming update from telegram: %s", update)
+        def wrapper(self, update, context):
+            # self.get_logger().info("Incoming update from telegram: %s", update)
             # if self._telegram_chat_id is None:
             #     self.get_logger().warn("Discarding message. No active chat_id.")
             #     update.message.reply_text("ROS Bridge not initialized. Type /start to set-up ROS bridge")
@@ -58,9 +58,9 @@ class TelegramBridge(Node):
             #     update.message.reply_text(
             #         "ROS Bridge initialized to another chat_id. Type /start to connect to this chat_id")
             # else:
-        #         return callback_function(self, update, context)
-        #
-        # return wrapper
+            return callback_function(self, update, context)
+
+        return wrapper
 
     def _telegram_start_callback(self, update, context):
         """
