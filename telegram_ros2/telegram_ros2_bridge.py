@@ -13,7 +13,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 class TelegramBridge(Node):
     def __init__(self):
         super(TelegramBridge, self).__init__('telegram_bridge')
-        self.pub_to_ros = self.create_publisher(String, 'message_to_ros', 10)
+        self._from_telegram_string_publisher = self.create_publisher(String, 'message_to_ros', 10)
         self.sub_from_ros = self.create_subscription(String, 'message_from_ros', self.handle_ros_message, 10)
 
         self._telegram_chat_id = None
@@ -25,6 +25,8 @@ class TelegramBridge(Node):
 
         self._telegram_updater.dispatcher.add_handler(CommandHandler("start", self._telegram_start_callback))
         self._telegram_updater.dispatcher.add_handler(CommandHandler("stop", self._telegram_stop_callback))
+
+        self._telegram_updater.dispatcher.add_handler(MessageHandler(Filters.text, self._telegram_message_callback))
 
     def start(self):
         self._telegram_updater.start_polling()
@@ -95,6 +97,16 @@ class TelegramBridge(Node):
         update.message.reply_text("Disconnecting chat_id {}. So long and thanks for all the fish!"
                                   " Type /start to reconnect".format(self._telegram_chat_id))
         self._telegram_chat_id = None
+
+
+    @telegram_callback
+    def _telegram_message_callback(self, update, context):
+        """
+        Called when a new telegram message has been received. The method will verify whether the incoming message is
+        from the bridges telegram conversation by comparing the chat_id.
+        :param update: Received update that holds the chat_id and message data
+        """
+        self._from_telegram_string_publisher.publish(String(data=update.message.text))
 
 
 def main(args=None):
