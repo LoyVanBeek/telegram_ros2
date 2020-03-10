@@ -45,9 +45,8 @@ class TelegramBridge(Node):
         :param callback_function: A callback function taking a telegram.Bot and a telegram.Update
         :return: Wrapped callback function
         """
-        # return callback_function
 
-        # @functools.wraps(callback_function)
+        @functools.wraps(callback_function)
         def wrapper(self, update, context):
             self.get_logger().debug("Incoming update from telegram: {}".format(update))
             if self._telegram_chat_id is None:
