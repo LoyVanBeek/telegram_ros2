@@ -5,7 +5,9 @@ from rclpy.node import Node
 
 from std_msgs.msg import String
 
-from telegram.ext import Updater, CommandHandler
+from telegram import Location, ReplyKeyboardMarkup
+from telegram.error import TimedOut
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 
 class TelegramBridge(Node):
@@ -43,21 +45,22 @@ class TelegramBridge(Node):
         :param callback_function: A callback function taking a telegram.Bot and a telegram.Update
         :return: Wrapped callback function
         """
+        return callback_function
 
-        @functools.wraps(callback_function)
-        def wrapper(self, update, context):
-            self.get_logger().debug("Incoming update from telegram: %s", update)
-            if self._telegram_chat_id is None:
-                self.get_logger().warn("Discarding message. No active chat_id.")
-                update.message.reply_text("ROS Bridge not initialized. Type /start to set-up ROS bridge")
-            elif self._telegram_chat_id != update.message.chat_id:
-                self.get_logger().warn("Discarding message. Invalid chat_id")
-                update.message.reply_text(
-                    "ROS Bridge initialized to another chat_id. Type /start to connect to this chat_id")
-            else:
-                callback_function(self, update, context)
-
-        return wrapper
+        # @functools.wraps(callback_function)
+        # def wrapper(self, update, context):
+        #     self.get_logger().info("Incoming update from telegram: %s", update)
+            # if self._telegram_chat_id is None:
+            #     self.get_logger().warn("Discarding message. No active chat_id.")
+            #     update.message.reply_text("ROS Bridge not initialized. Type /start to set-up ROS bridge")
+            # elif self._telegram_chat_id != update.message.chat_id:
+            #     self.get_logger().warn("Discarding message. Invalid chat_id")
+            #     update.message.reply_text(
+            #         "ROS Bridge initialized to another chat_id. Type /start to connect to this chat_id")
+            # else:
+        #         return callback_function(self, update, context)
+        #
+        # return wrapper
 
     def _telegram_start_callback(self, update, context):
         """
@@ -76,6 +79,7 @@ class TelegramBridge(Node):
         update.message.reply_text(
             "Telegram ROS bridge initialized, only replying to chat_id {} (current). Type /stop to disconnect".format(self._telegram_chat_id))
 
+    @telegram_callback
     def _telegram_stop_callback(self, update, context):
         """
         Called when a telegram user sends the '/stop' event to the bot. Then, the user is disconnected from the bot and
