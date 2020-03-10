@@ -103,7 +103,10 @@ def main(args=None):
     bridge = TelegramBridge()
     with bridge:
         while rclpy.ok():
-            rclpy.spin_once(bridge, timeout_sec=0.1)
+            try:
+                rclpy.spin_once(bridge, timeout_sec=0.1)
+            except KeyboardInterrupt:
+                break
 
     bridge.destroy_node()
     rclpy.shutdown()
