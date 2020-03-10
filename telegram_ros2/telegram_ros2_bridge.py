@@ -3,14 +3,15 @@ from rclpy.node import Node
 
 from std_msgs.msg import String
 
-class TelegramBridge(Node):
-	def __init__(self):
-		super().__init__('telegram_bridge')
-		self.pub_to_ros = self.create_publisher(String, 'message_from_telegram', 10)
-		self.sub_from_ros = self.create_subscription(String, 'message_to_telegram', self.handle_ros_message, 10)
 
-	def handle_ros_message(self, msg):
-		self.get_logger().info(str(msg.data))
+class TelegramBridge(Node):
+    def __init__(self):
+        super(TelegramBridge, self).__init__('telegram_bridge')
+        self.pub_to_ros = self.create_publisher(String, 'message_from_telegram', 10)
+        self.sub_from_ros = self.create_subscription(String, 'message_to_telegram', self.handle_ros_message, 10)
+
+    def handle_ros_message(self, msg):
+        self.get_logger().info(str(msg.data))
 
 
 def main(args=None):
