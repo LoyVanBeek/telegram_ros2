@@ -5,7 +5,7 @@ from rclpy.node import Node
 
 from std_msgs.msg import String
 
-from telegram import Location, ReplyKeyboardMarkup
+from telegram import Location, ReplyKeyboardMarkup, Bot
 from telegram.error import TimedOut
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
@@ -19,8 +19,7 @@ class TelegramBridge(Node):
         self._telegram_chat_id = None
 
         self.declare_parameter("api_token")
-        self._telegram_updater = Updater(token=self.get_parameter("api_token").value,
-                                         use_context=True)
+        self._telegram_updater = Updater(token=self.get_parameter("api_token").value, use_context=True)
         self._telegram_updater.dispatcher.add_error_handler(
             lambda _, update, error: self.get_logger().error("Update {} caused error {}".format(update, error)))
 
@@ -35,6 +34,12 @@ class TelegramBridge(Node):
         self.get_logger().debug("Stopping Telegram updater")
         self._telegram_updater.stop()
         self.get_logger().debug("Stopped Telegram updater")
+
+    def __enter__(self):
+        return self.start()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return self.stop()
 
     def handle_ros_message(self, msg):
         self.get_logger().info(str(msg.data))
@@ -96,10 +101,9 @@ def main(args=None):
     rclpy.init(args=args)
 
     bridge = TelegramBridge()
-    bridge.start()
-    while rclpy.ok():
-        rclpy.spin_once(bridge)
-    bridge.stop()
+    with bridge:
+        while rclpy.ok():
+            rclpy.spin_once(bridge, timeout_sec=0.1)
 
     bridge.destroy_node()
     rclpy.shutdown()
