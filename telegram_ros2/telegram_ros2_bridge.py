@@ -49,16 +49,16 @@ class TelegramBridge(Node):
 
         # @functools.wraps(callback_function)
         def wrapper(self, update, context):
-            # self.get_logger().info("Incoming update from telegram: %s", update)
-            # if self._telegram_chat_id is None:
-            #     self.get_logger().warn("Discarding message. No active chat_id.")
-            #     update.message.reply_text("ROS Bridge not initialized. Type /start to set-up ROS bridge")
-            # elif self._telegram_chat_id != update.message.chat_id:
-            #     self.get_logger().warn("Discarding message. Invalid chat_id")
-            #     update.message.reply_text(
-            #         "ROS Bridge initialized to another chat_id. Type /start to connect to this chat_id")
-            # else:
-            return callback_function(self, update, context)
+            self.get_logger().debug("Incoming update from telegram: {}".format(update))
+            if self._telegram_chat_id is None:
+                self.get_logger().warn("Discarding message. No active chat_id.")
+                update.message.reply_text("ROS Bridge not initialized. Type /start to set-up ROS bridge")
+            elif self._telegram_chat_id != update.message.chat_id:
+                self.get_logger().warn("Discarding message. Invalid chat_id")
+                update.message.reply_text(
+                    "ROS Bridge initialized to another chat_id. Type /start to connect to this chat_id")
+            else:
+                return callback_function(self, update, context)
 
         return wrapper
 
