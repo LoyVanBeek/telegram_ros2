@@ -1,20 +1,31 @@
 import functools
+from io import StringIO
 
 import rclpy
 from rclpy.node import Node
 
 from std_msgs.msg import String
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
 
 from telegram import Location, ReplyKeyboardMarkup, Bot
 from telegram.error import TimedOut
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+
+import cv2
+import numpy as np
 
 
 class TelegramBridge(Node):
     def __init__(self):
         super(TelegramBridge, self).__init__('telegram_bridge')
 
+        self._cv_bridge = CvBridge()
+
         self._telegram_chat_id = None
+
+        self.declare_parameter("caption_as_frame_id")
+        self._caption_as_frame_id = self.get_parameter_or("caption_as_frame_id", False).value
 
         self.declare_parameter("api_token")
         self._telegram_updater = Updater(token=self.get_parameter("api_token").value, use_context=True)
@@ -27,6 +38,10 @@ class TelegramBridge(Node):
         self._from_telegram_string_publisher = self.create_publisher(String, 'message_to_ros', 10)
         self._from_ros_string_subscriber = self.create_subscription(String, 'message_from_ros', self._ros_message_callback, 10)
         self._telegram_updater.dispatcher.add_handler(MessageHandler(Filters.text, self._telegram_message_callback))
+
+        self._from_telegram_image_publisher = self.create_publisher(Image, 'image_to_ros', 10)
+        self._from_ros_image_subscriber = self.create_subscription(Image, 'image_from_ros', self._ros_image_callback, 10)
+        self._telegram_updater.dispatcher.add_handler(MessageHandler(Filters.photo, self._telegram_image_callback))
 
     def start(self):
         self._telegram_updater.start_polling()
@@ -132,6 +147,38 @@ class TelegramBridge(Node):
         """
         self.get_logger().info(str(msg.data))
         self._telegram_updater.bot.send_message(self._telegram_chat_id, msg.data)
+
+    @telegram_callback
+    def _telegram_image_callback(self, update, context):
+        """
+        Called when a new telegram image has been received and passes in on to ROS
+        :param update: Received update that holds the chat_id and image data
+        """
+        self.get_logger().debug("Received image, downloading highest resolution image ...")
+        byte_array = update.message.photo[-1].get_file().download_as_bytearray()
+        self.get_logger().debug("Download complete, publishing ...")
+
+        img = cv2.imdecode(np.asarray(byte_array, dtype=np.uint8), cv2.IMREAD_COLOR)
+        msg = self._cv_bridge.cv2_to_imgmsg(img, encoding="bgr8")
+
+        if self._caption_as_frame_id:
+            msg.header.frame_id = update.message.caption
+        self._from_telegram_image_publisher.publish(msg)
+
+        if update.message.caption:
+            self._from_telegram_string_publisher.publish(String(data=update.message.caption))
+
+
+    @ros_callback
+    def _ros_image_callback(self, msg):
+        """
+        Called when a new ROS String image is coming in that should be sent to the telegram conversation
+        :param msg: String image
+        """
+        cv2_img = self._cv_bridge.imgmsg_to_cv2(msg, "bgr8")
+        self._telegram_updater.bot.send_photo(self._telegram_chat_id,
+                                              photo=StringIO(cv2.imencode('.jpg', cv2_img)[1].tostring()),
+                                              caption=msg.header.frame_id)
 
 
 def main(args=None):
