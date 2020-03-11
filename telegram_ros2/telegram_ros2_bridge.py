@@ -13,8 +13,6 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 class TelegramBridge(Node):
     def __init__(self):
         super(TelegramBridge, self).__init__('telegram_bridge')
-        self._from_telegram_string_publisher = self.create_publisher(String, 'message_to_ros', 10)
-        self.sub_from_ros = self.create_subscription(String, 'message_from_ros', self.handle_ros_message, 10)
 
         self._telegram_chat_id = None
 
@@ -26,6 +24,8 @@ class TelegramBridge(Node):
         self._telegram_updater.dispatcher.add_handler(CommandHandler("start", self._telegram_start_callback))
         self._telegram_updater.dispatcher.add_handler(CommandHandler("stop", self._telegram_stop_callback))
 
+        self._from_telegram_string_publisher = self.create_publisher(String, 'message_to_ros', 10)
+        self._from_ros_string_subscriber = self.create_subscription(String, 'message_from_ros', self._ros_message_callback, 10)
         self._telegram_updater.dispatcher.add_handler(MessageHandler(Filters.text, self._telegram_message_callback))
 
     def start(self):
@@ -42,9 +42,6 @@ class TelegramBridge(Node):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         return self.stop()
-
-    def handle_ros_message(self, msg):
-        self.get_logger().info(str(msg.data))
 
     def telegram_callback(callback_function):
         """
@@ -65,6 +62,25 @@ class TelegramBridge(Node):
                     "ROS Bridge initialized to another chat_id. Type /start to connect to this chat_id")
             else:
                 return callback_function(self, update, context)
+
+        return wrapper
+
+    def ros_callback(callback_function):
+        """
+        Decorator that verifies whether we have an active chat id and handles possible exceptions
+        :param callback_function: A callback function taking a ros msg
+        :return: Wrapped callback function
+        """
+
+        @functools.wraps(callback_function)
+        def wrapper(self, msg):
+            if not self._telegram_chat_id:
+                self.get_logger().error("ROS Bridge not initialized, dropping message of type {}".format(msg._type))
+            else:
+                try:
+                    callback_function(self, msg)
+                except TimedOut as e:
+                    self.get_logger().error("Telegram timeout: {}".format(e))
 
         return wrapper
 
@@ -107,6 +123,15 @@ class TelegramBridge(Node):
         :param update: Received update that holds the chat_id and message data
         """
         self._from_telegram_string_publisher.publish(String(data=update.message.text))
+
+    @ros_callback
+    def _ros_message_callback(self, msg):
+        """
+        Called when a new ROS String message is coming in that should be send to the telegram conversation
+        :param msg: String message
+        """
+        self.get_logger().info(str(msg.data))
+        self._telegram_updater.bot.send_message(self._telegram_chat_id, msg.data)
 
 
 def main(args=None):
