@@ -1,12 +1,11 @@
 import functools
-from io import StringIO
 
 import rclpy
 from io import BytesIO
 from rclpy.node import Node
 
-from std_msgs.msg import String
-from sensor_msgs.msg import Image
+from std_msgs.msg import String, Header
+from sensor_msgs.msg import Image, NavSatFix
 from cv_bridge import CvBridge
 
 from telegram import Location, ReplyKeyboardMarkup, Bot
@@ -43,6 +42,10 @@ class TelegramBridge(Node):
         self._from_telegram_image_publisher = self.create_publisher(Image, 'image_to_ros', 10)
         self._from_ros_image_subscriber = self.create_subscription(Image, 'image_from_ros', self._ros_image_callback, 10)
         self._telegram_updater.dispatcher.add_handler(MessageHandler(Filters.photo, self._telegram_image_callback))
+
+        self._from_telegram_location_publisher = self.create_publisher(NavSatFix, "location_to_ros", 10)
+        self._to_telegram_location_subscriber = self.create_subscription(NavSatFix, "location_from_ros", self._ros_location_callback, 10)
+        self._telegram_updater.dispatcher.add_handler(MessageHandler(Filters.location, self._telegram_location_callback))
 
     def start(self):
         self._telegram_updater.start_polling()
@@ -181,6 +184,27 @@ class TelegramBridge(Node):
                                               photo=BytesIO(cv2.imencode('.jpg', cv2_img)[1].tobytes()),
                                               caption=msg.header.frame_id if self._caption_as_frame_id else '')
 
+    @telegram_callback
+    def _telegram_location_callback(self, update, context):
+        """
+        Called when a new telegram Location is received. The method will verify whether the incoming Location is
+        from the bridged telegram conversation by comparing the chat_id.
+        :param update: Received update that holds the chat_id and message data
+        """
+        self._from_telegram_location_publisher.publish(NavSatFix(
+            header=Header(),
+            latitude=update.message.location.latitude,
+            longitude=update.message.location.longitude,
+            position_covariance_type=NavSatFix.COVARIANCE_TYPE_UNKNOWN
+        ))
+
+    @ros_callback
+    def _ros_location_callback(self, msg):
+        """
+        Called when a new ROS NavSatFix message is coming in that should be send to the telegram conversation
+        :param msg: NavSatFix that the robot wants to share
+        """
+        self._telegram_updater.bot.send_location(self._telegram_chat_id, location=Location(msg.longitude, msg.latitude))
 
 def main(args=None):
     rclpy.init(args=args)
