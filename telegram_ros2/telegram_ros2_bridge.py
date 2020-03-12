@@ -2,6 +2,7 @@ import functools
 from io import StringIO
 
 import rclpy
+from io import BytesIO
 from rclpy.node import Node
 
 from std_msgs.msg import String
@@ -90,7 +91,7 @@ class TelegramBridge(Node):
         @functools.wraps(callback_function)
         def wrapper(self, msg):
             if not self._telegram_chat_id:
-                self.get_logger().error("ROS Bridge not initialized, dropping message of type {}".format(msg._type))
+                self.get_logger().error("ROS Bridge not initialized, dropping message of type {}".format(type(msg)  ))
             else:
                 try:
                     callback_function(self, msg)
@@ -177,8 +178,8 @@ class TelegramBridge(Node):
         """
         cv2_img = self._cv_bridge.imgmsg_to_cv2(msg, "bgr8")
         self._telegram_updater.bot.send_photo(self._telegram_chat_id,
-                                              photo=StringIO(cv2.imencode('.jpg', cv2_img)[1].tostring()),
-                                              caption=msg.header.frame_id)
+                                              photo=BytesIO(cv2.imencode('.jpg', cv2_img)[1].tobytes()),
+                                              caption=msg.header.frame_id if self._caption_as_frame_id else '')
 
 
 def main(args=None):
