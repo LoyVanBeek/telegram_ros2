@@ -6,6 +6,7 @@ from rclpy.node import Node
 
 from std_msgs.msg import String, Header
 from sensor_msgs.msg import Image, NavSatFix
+from instant_messaging_interfaces.msg import Options
 from cv_bridge import CvBridge
 
 from telegram import Location, ReplyKeyboardMarkup, Bot
@@ -46,6 +47,8 @@ class TelegramBridge(Node):
         self._from_telegram_location_publisher = self.create_publisher(NavSatFix, "location_to_ros", 10)
         self._to_telegram_location_subscriber = self.create_subscription(NavSatFix, "location_from_ros", self._ros_location_callback, 10)
         self._telegram_updater.dispatcher.add_handler(MessageHandler(Filters.location, self._telegram_location_callback))
+
+        self._to_telegram_options_subscriber = self.create_subscription(Options, "options_from_ros", self._ros_options_callback, 10)
 
     def start(self):
         self._telegram_updater.start_polling()
@@ -205,6 +208,25 @@ class TelegramBridge(Node):
         :param msg: NavSatFix that the robot wants to share
         """
         self._telegram_updater.bot.send_location(self._telegram_chat_id, location=Location(msg.longitude, msg.latitude))
+
+    @ros_callback
+    def _ros_options_callback(self, msg):
+        """
+        Called when a new ROS Options message is coming in that should be sent to the telegram conversation
+        :param msg: Options that the robot wants to share
+        """
+
+        def chunks(l, n):
+            """Yield successive n-sized chunks from l."""
+            for i in range(0, len(l), n):
+                yield l[i:i + n]
+
+        options_keyboard = ReplyKeyboardMarkup(keyboard=list(chunks(msg.options, 5)),
+                                               resize_keyboard=True,
+                                               one_time_keyboard=True)
+        reply = self._telegram_updater.bot.send_message(self._telegram_chat_id,
+                                                text=msg.question,
+                                                reply_markup=options_keyboard)
 
 def main(args=None):
     rclpy.init(args=args)
