@@ -33,6 +33,8 @@ class TelegramBridge(Node):
         self._telegram_updater.dispatcher.add_error_handler(
             lambda _, update, error: self.get_logger().error("Update {} caused error {}".format(update, error)))
 
+        self.declare_parameter("whitelist")  # ist of chat IDs we'll accept
+
         self._telegram_updater.dispatcher.add_handler(CommandHandler("start", self._telegram_start_callback))
         self._telegram_updater.dispatcher.add_handler(CommandHandler("stop", self._telegram_stop_callback))
 
@@ -112,11 +114,18 @@ class TelegramBridge(Node):
         to a specific conversation
         :param update: Received update event that holds the chat_id and message data
         """
+
+        whitelist = self.get_parameter("whitelist").value
+        if whitelist:  # If the whitelist is empty, it is disabled and anyone is allowed.
+            if update.message.chat_id not in whitelist:
+                self.get_logger().warn("Discarding message. User {} not whitelisted".format(update.message.from_user))
+                update.message.reply_text("You (chat id {}) are not authorized to chat with this bot".format(update.message.from_user['id']))
+                return
+
         if self._telegram_chat_id is not None and self._telegram_chat_id != update.message.chat_id:
             self.get_logger().warn("Changing to different chat_id!")
             self._telegram_updater.bot.send_message(self._telegram_chat_id,
                                                     "Lost ROS bridge connection to this chat_id (somebody took over)")
-
         self._telegram_chat_id = update.message.chat_id
 
         self.get_logger().info("Starting telegram ROS bridge for chat id {}".format(self._telegram_chat_id))
@@ -174,7 +183,6 @@ class TelegramBridge(Node):
 
         if update.message.caption:
             self._from_telegram_string_publisher.publish(String(data=update.message.caption))
-
 
     @ros_callback
     def _ros_image_callback(self, msg):
