@@ -71,7 +71,7 @@ class TelegramBridge(Node):
     def telegram_callback(callback_function):
         """
         Decorator to restrict telegram methods only to the active chat or tell to /start one if needed
-        :param callback_function: A callback function taking a telegram.Bot and a telegram.Update
+        :config callback_function: A callback function taking a telegram.Bot and a telegram.Update
         :return: Wrapped callback function
         """
 
@@ -99,7 +99,7 @@ class TelegramBridge(Node):
     def ros_callback(callback_function):
         """
         Decorator that verifies whether we have an active chat id and handles possible exceptions
-        :param callback_function: A callback function taking a ros msg
+        :config callback_function: A callback function taking a ros msg
         :return: Wrapped callback function
         """
 
@@ -130,7 +130,7 @@ class TelegramBridge(Node):
         """
         Called when a telegram user sends the '/start' event to the bot, using this event, the bridge can be connected
         to a specific conversation
-        :param update: Received update event that holds the chat_id and message data
+        :config update: Received update event that holds the chat_id and message data
         """
 
         if not self.is_whitelisted(update.message.chat_id) and not self.is_blacklisted(update.message.chat_id):
@@ -153,7 +153,7 @@ class TelegramBridge(Node):
         """
         Called when a telegram user sends the '/stop' event to the bot. Then, the user is disconnected from the bot and
         will no longer receive messages.
-        :param update: Received update event that holds the chat_id and message data
+        :config update: Received update event that holds the chat_id and message data
         """
 
         self.get_logger().info("Stopping telegram ROS bridge for chat id {}".format(self._telegram_chat_id))
@@ -167,7 +167,7 @@ class TelegramBridge(Node):
         """
         Called when a new telegram message has been received. The method will verify whether the incoming message is
         from the bridges telegram conversation by comparing the chat_id.
-        :param update: Received update that holds the chat_id and message data
+        :config update: Received update that holds the chat_id and message data
         """
         self._from_telegram_string_publisher.publish(String(data=update.message.text))
 
@@ -175,7 +175,7 @@ class TelegramBridge(Node):
     def _ros_message_callback(self, msg):
         """
         Called when a new ROS String message is coming in that should be send to the telegram conversation
-        :param msg: String message
+        :config msg: String message
         """
         self.get_logger().info(str(msg.data))
         self._telegram_updater.bot.send_message(self._telegram_chat_id, msg.data)
@@ -184,7 +184,7 @@ class TelegramBridge(Node):
     def _telegram_image_callback(self, update, context):
         """
         Called when a new telegram image has been received and passes in on to ROS
-        :param update: Received update that holds the chat_id and image data
+        :config update: Received update that holds the chat_id and image data
         """
         self.get_logger().debug("Received image, downloading highest resolution image ...")
         byte_array = update.message.photo[-1].get_file().download_as_bytearray()
@@ -204,7 +204,7 @@ class TelegramBridge(Node):
     def _ros_image_callback(self, msg):
         """
         Called when a new ROS String image is coming in that should be sent to the telegram conversation
-        :param msg: String image
+        :config msg: String image
         """
         cv2_img = self._cv_bridge.imgmsg_to_cv2(msg, "bgr8")
         self._telegram_updater.bot.send_photo(self._telegram_chat_id,
@@ -216,7 +216,7 @@ class TelegramBridge(Node):
         """
         Called when a new telegram Location is received. The method will verify whether the incoming Location is
         from the bridged telegram conversation by comparing the chat_id.
-        :param update: Received update that holds the chat_id and message data
+        :config update: Received update that holds the chat_id and message data
         """
         self._from_telegram_location_publisher.publish(NavSatFix(
             header=Header(),
@@ -229,7 +229,7 @@ class TelegramBridge(Node):
     def _ros_location_callback(self, msg):
         """
         Called when a new ROS NavSatFix message is coming in that should be send to the telegram conversation
-        :param msg: NavSatFix that the robot wants to share
+        :config msg: NavSatFix that the robot wants to share
         """
         self._telegram_updater.bot.send_location(self._telegram_chat_id, location=Location(msg.longitude, msg.latitude))
 
@@ -237,7 +237,7 @@ class TelegramBridge(Node):
     def _ros_options_callback(self, msg):
         """
         Called when a new ROS Options message is coming in that should be sent to the telegram conversation
-        :param msg: Options that the robot wants to share
+        :config msg: Options that the robot wants to share
         """
 
         def chunks(l, n):
