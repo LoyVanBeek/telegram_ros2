@@ -34,6 +34,7 @@ class TelegramBridge(Node):
             lambda _, update, error: self.get_logger().error("Update {} caused error {}".format(update, error)))
 
         self.declare_parameter("whitelist")  # ist of chat IDs we'll accept
+        self.declare_parameter("blacklist")  # ist of chat IDs we'll NOT accept
 
         self._telegram_updater.dispatcher.add_handler(CommandHandler("start", self._telegram_start_callback))
         self._telegram_updater.dispatcher.add_handler(CommandHandler("stop", self._telegram_stop_callback))
@@ -77,15 +78,21 @@ class TelegramBridge(Node):
         @functools.wraps(callback_function)
         def wrapper(self, update, context):
             self.get_logger().debug("Incoming update from telegram: {}".format(update))
-            if self._telegram_chat_id is None:
-                self.get_logger().warn("Discarding message. No active chat_id.")
-                update.message.reply_text("ROS Bridge not initialized. Type /start to set-up ROS bridge")
-            elif self._telegram_chat_id != update.message.chat_id:
-                self.get_logger().warn("Discarding message. Invalid chat_id")
-                update.message.reply_text(
-                    "ROS Bridge initialized to another chat_id. Type /start to connect to this chat_id")
+
+            if self.is_blacklisted(update.message.chat_id):
+                self.get_logger().warn("Discarding message. User {} is blacklisted".format(update.message.from_user))
+                update.message.reply_text("You (chat id {}) are not authorized to chat with this bot".format(update.message.from_user['id']))
+                return
             else:
-                return callback_function(self, update, context)
+                if self._telegram_chat_id is None:
+                    self.get_logger().warn("Discarding message. No active chat_id.")
+                    update.message.reply_text("ROS Bridge not initialized. Type /start to set-up ROS bridge")
+                elif self._telegram_chat_id != update.message.chat_id:
+                    self.get_logger().warn("Discarding message. Invalid chat_id")
+                    update.message.reply_text(
+                        "ROS Bridge initialized to another chat_id. Type /start to connect to this chat_id")
+                else:
+                    return callback_function(self, update, context)
 
         return wrapper
 
@@ -115,6 +122,10 @@ class TelegramBridge(Node):
         else:
             return True
 
+    def is_blacklisted(self, chat_id):
+        blacklist = self.get_parameter_or("blacklist", []).value
+        return chat_id in blacklist
+
     def _telegram_start_callback(self, update, context):
         """
         Called when a telegram user sends the '/start' event to the bot, using this event, the bridge can be connected
@@ -122,7 +133,7 @@ class TelegramBridge(Node):
         :param update: Received update event that holds the chat_id and message data
         """
 
-        if not self.is_whitelisted(update.message.chat_id):
+        if not self.is_whitelisted(update.message.chat_id) and not self.is_blacklisted(update.message.chat_id):
                 self.get_logger().warn("Discarding message. User {} not whitelisted".format(update.message.from_user))
                 update.message.reply_text("You (chat id {}) are not authorized to chat with this bot".format(update.message.from_user['id']))
                 return
