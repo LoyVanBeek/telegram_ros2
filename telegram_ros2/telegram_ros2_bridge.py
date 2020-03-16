@@ -108,6 +108,13 @@ class TelegramBridge(Node):
 
         return wrapper
 
+    def is_whitelisted(self, chat_id):
+        whitelist = self.get_parameter_or("whitelist", []).value  # If the whitelist is empty, it is disabled and anyone is allowed.
+        if whitelist:
+            return chat_id in whitelist
+        else:
+            return True
+
     def _telegram_start_callback(self, update, context):
         """
         Called when a telegram user sends the '/start' event to the bot, using this event, the bridge can be connected
@@ -115,9 +122,7 @@ class TelegramBridge(Node):
         :param update: Received update event that holds the chat_id and message data
         """
 
-        whitelist = self.get_parameter("whitelist").value
-        if whitelist:  # If the whitelist is empty, it is disabled and anyone is allowed.
-            if update.message.chat_id not in whitelist:
+        if not self.is_whitelisted(update.message.chat_id):
                 self.get_logger().warn("Discarding message. User {} not whitelisted".format(update.message.from_user))
                 update.message.reply_text("You (chat id {}) are not authorized to chat with this bot".format(update.message.from_user['id']))
                 return
