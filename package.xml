@@ -7,8 +7,6 @@
   <maintainer email="loy.vanbeek@gmail.com">loy</maintainer>
   <license>MIT</license>
 
-  <buildtool_depend>ament_python</buildtool_depend>
-
   <exec_depend>cv_bridge</exec_depend>
   <exec_depend>instant_messaging_interfaces</exec_depend>
   <exec_depend>python-numpy</exec_depend>
