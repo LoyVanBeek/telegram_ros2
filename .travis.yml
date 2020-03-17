@@ -3,8 +3,16 @@ services:
 
 install:
   - git clone --quiet --depth 1 https://github.com/mikaelarguedas/ros2ci.git .ros2ci
+  # optional: add custom repos or rosinstall file to the workspace for all jobs
+  # these will be compiled in an underlay workspace
+   - cp .travis.rosinstall .ros2ci/additional_repos.repos
 
 matrix:
   include:
     - env: JOB_TYPE=eloquent
       script: .ros2ci/travis.bash $JOB_TYPE
+    - env: JOB_TYPE=nightly
+      script:
+      # Optional: Add custom repositories for a specific job type
+      - cp custom_repos_not_in_nightly_archive.repos .ros2ci/additional_repos.repos
+      - .ros2ci/travis.bash $JOB_TYPE
