@@ -18,6 +18,7 @@ import numpy as np
 
 
 class TelegramBridge(Node):
+
     def __init__(self):
         super(TelegramBridge, self).__init__('telegram_bridge')
 
@@ -97,8 +98,8 @@ class TelegramBridge(Node):
                 self.get_logger().warn(
                     "Discarding message. User {} is blacklisted".format(update.message.from_user))
                 update.message.reply_text(
-                    "You (chat id {}) are not authorized to chat with this bot"
-                        .format(update.message.from_user['id']))
+                    "You (chat id {}) are not authorized to chat with this bot".format(
+                        update.message.from_user['id']))
                 return
             else:
                 if self._telegram_chat_id is None:
@@ -256,8 +257,9 @@ class TelegramBridge(Node):
         """
         cv2_img = self._cv_bridge.imgmsg_to_cv2(msg, "bgr8")
         caption = msg.header.frame_id if self._caption_as_frame_id else ''
+        photo = BytesIO(cv2.imencode('.jpg', cv2_img)[1].tobytes())
         self._telegram_updater.bot.send_photo(self._telegram_chat_id,
-                                              photo=BytesIO(cv2.imencode('.jpg', cv2_img)[1].tobytes()),
+                                              photo=photo,
                                               caption=caption)
 
     @telegram_callback
@@ -301,9 +303,9 @@ class TelegramBridge(Node):
         options_keyboard = ReplyKeyboardMarkup(keyboard=list(chunks(msg.options, 5)),
                                                resize_keyboard=True,
                                                one_time_keyboard=True)
-        reply = self._telegram_updater.bot.send_message(self._telegram_chat_id,
-                                                        text=msg.question,
-                                                        reply_markup=options_keyboard)
+        self._telegram_updater.bot.send_message(self._telegram_chat_id,
+                                                text=msg.question,
+                                                reply_markup=options_keyboard)
 
 
 def main(args=None):

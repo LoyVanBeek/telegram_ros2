@@ -5,7 +5,8 @@ from pathlib import Path
 
 
 def generate_launch_description():
-    parameters_file_path = Path(get_package_share_directory('telegram_ros2'), 'config', 'example_param.yaml')
+    parameters_file_path = Path(
+        get_package_share_directory('telegram_ros2'), 'config', 'example_param.yaml')
     return LaunchDescription([
         Node(
             package='telegram_ros2',
