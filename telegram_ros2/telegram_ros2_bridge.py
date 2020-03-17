@@ -9,7 +9,7 @@ from sensor_msgs.msg import Image, NavSatFix
 from instant_messaging_interfaces.msg import Options
 from cv_bridge import CvBridge
 
-from telegram import Location, ReplyKeyboardMarkup, Bot
+from telegram import Location, ReplyKeyboardMarkup
 from telegram.error import TimedOut
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
@@ -29,29 +29,43 @@ class TelegramBridge(Node):
         self._caption_as_frame_id = self.get_parameter_or("caption_as_frame_id", False).value
 
         self.declare_parameter("api_token")
-        self._telegram_updater = Updater(token=self.get_parameter("api_token").value, use_context=True)
+        self._telegram_updater = Updater(token=self.get_parameter("api_token").value,
+                                         use_context=True)
         self._telegram_updater.dispatcher.add_error_handler(
-            lambda _, update, error: self.get_logger().error("Update {} caused error {}".format(update, error)))
+            lambda _, update, error:
+            self.get_logger().error("Update {} caused error {}".format(update, error)))
 
         self.declare_parameter("whitelist")  # ist of chat IDs we'll accept
         self.declare_parameter("blacklist")  # ist of chat IDs we'll NOT accept
 
-        self._telegram_updater.dispatcher.add_handler(CommandHandler("start", self._telegram_start_callback))
-        self._telegram_updater.dispatcher.add_handler(CommandHandler("stop", self._telegram_stop_callback))
+        self._telegram_updater.dispatcher.add_handler(
+            CommandHandler("start", self._telegram_start_callback))
+        self._telegram_updater.dispatcher.add_handler(
+            CommandHandler("stop", self._telegram_stop_callback))
 
-        self._from_telegram_string_publisher = self.create_publisher(String, 'message_to_ros', 10)
-        self._from_ros_string_subscriber = self.create_subscription(String, 'message_from_ros', self._ros_message_callback, 10)
-        self._telegram_updater.dispatcher.add_handler(MessageHandler(Filters.text, self._telegram_message_callback))
+        self._from_telegram_string_publisher = self.create_publisher(
+            String, 'message_to_ros', 10)
+        self._from_ros_string_subscriber = self.create_subscription(
+            String, 'message_from_ros', self._ros_message_callback, 10)
+        self._telegram_updater.dispatcher.add_handler(
+            MessageHandler(Filters.text, self._telegram_message_callback))
 
-        self._from_telegram_image_publisher = self.create_publisher(Image, 'image_to_ros', 10)
-        self._from_ros_image_subscriber = self.create_subscription(Image, 'image_from_ros', self._ros_image_callback, 10)
-        self._telegram_updater.dispatcher.add_handler(MessageHandler(Filters.photo, self._telegram_image_callback))
+        self._from_telegram_image_publisher = self.create_publisher(
+            Image, 'image_to_ros', 10)
+        self._from_ros_image_subscriber = self.create_subscription(
+            Image, 'image_from_ros', self._ros_image_callback, 10)
+        self._telegram_updater.dispatcher.add_handler(MessageHandler(
+            Filters.photo, self._telegram_image_callback))
 
-        self._from_telegram_location_publisher = self.create_publisher(NavSatFix, "location_to_ros", 10)
-        self._to_telegram_location_subscriber = self.create_subscription(NavSatFix, "location_from_ros", self._ros_location_callback, 10)
-        self._telegram_updater.dispatcher.add_handler(MessageHandler(Filters.location, self._telegram_location_callback))
+        self._from_telegram_location_publisher = self.create_publisher(
+            NavSatFix, "location_to_ros", 10)
+        self._to_telegram_location_subscriber = self.create_subscription(
+            NavSatFix, "location_from_ros", self._ros_location_callback, 10)
+        self._telegram_updater.dispatcher.add_handler(
+            MessageHandler(Filters.location, self._telegram_location_callback))
 
-        self._to_telegram_options_subscriber = self.create_subscription(Options, "options_from_ros", self._ros_options_callback, 10)
+        self._to_telegram_options_subscriber = self.create_subscription(
+            Options, "options_from_ros", self._ros_options_callback, 10)
 
     def start(self):
         self._telegram_updater.start_polling()
@@ -70,7 +84,7 @@ class TelegramBridge(Node):
 
     def telegram_callback(callback_function):
         """
-        Decorate callbacks from the Telegram API to allow only to the active chat or tell to /start one if needed.
+        Decorate callbacks from the Telegram API to handle starting the session
 
         :config callback_function: A callback function taking a telegram.Bot and a telegram.Update
         :return: Wrapped callback function
@@ -80,17 +94,22 @@ class TelegramBridge(Node):
             self.get_logger().debug("Incoming update from telegram: {}".format(update))
 
             if self.is_blacklisted(update.message.chat_id):
-                self.get_logger().warn("Discarding message. User {} is blacklisted".format(update.message.from_user))
-                update.message.reply_text("You (chat id {}) are not authorized to chat with this bot".format(update.message.from_user['id']))
+                self.get_logger().warn(
+                    "Discarding message. User {} is blacklisted".format(update.message.from_user))
+                update.message.reply_text(
+                    "You (chat id {}) are not authorized to chat with this bot"
+                        .format(update.message.from_user['id']))
                 return
             else:
                 if self._telegram_chat_id is None:
                     self.get_logger().warn("Discarding message. No active chat_id.")
-                    update.message.reply_text("ROS Bridge not initialized. Type /start to set-up ROS bridge")
+                    update.message.reply_text(
+                        "ROS Bridge not initialized. Type /start to set-up ROS bridge")
                 elif self._telegram_chat_id != update.message.chat_id:
                     self.get_logger().warn("Discarding message. Invalid chat_id")
                     update.message.reply_text(
-                        "ROS Bridge initialized to another chat_id. Type /start to connect to this chat_id")
+                        "ROS Bridge initialized to another chat_id. "
+                        "Type /start to connect to this chat_id")
                 else:
                     return callback_function(self, update, context)
 
@@ -98,7 +117,9 @@ class TelegramBridge(Node):
 
     def ros_callback(callback_function):
         """
-        Decorate callback called by ROS to verify whether we have an active chat id and handle possible exceptions.
+        Decorate callback called by ROS to verify whether we have an active chat id
+
+        In case of exceptions, these will be logged.
 
         :config callback_function: A callback function taking a ros msg
         :return: Wrapped callback function
@@ -106,7 +127,8 @@ class TelegramBridge(Node):
         @functools.wraps(callback_function)
         def wrapper(self, msg):
             if not self._telegram_chat_id:
-                self.get_logger().error("ROS Bridge not initialized, dropping message of type {}".format(type(msg)))
+                self.get_logger().error("ROS Bridge not initialized, dropping message of type {}"
+                                        .format(type(msg)))
             else:
                 try:
                     callback_function(self, msg)
@@ -122,7 +144,8 @@ class TelegramBridge(Node):
         :param chat_id:
         :return:
         """
-        whitelist = self.get_parameter_or("whitelist", []).value  # If the whitelist is empty, it is disabled and anyone is allowed.
+        # If the whitelist is empty, it is disabled and anyone is allowed.
+        whitelist = self.get_parameter_or("whitelist", []).value
         if whitelist:
             return chat_id in whitelist
         else:
@@ -146,20 +169,26 @@ class TelegramBridge(Node):
 
         :config update: Received update event that holds the chat_id and message data
         """
-        if not self.is_whitelisted(update.message.chat_id) and not self.is_blacklisted(update.message.chat_id):
-            self.get_logger().warn("Discarding message. User {} not whitelisted".format(update.message.from_user))
-            update.message.reply_text("You (chat id {}) are not authorized to chat with this bot".format(update.message.from_user['id']))
+        if not self.is_whitelisted(update.message.chat_id) and \
+                not self.is_blacklisted(update.message.chat_id):
+            self.get_logger().warn("Discarding message. User {} not whitelisted"
+                                   .format(update.message.from_user))
+            update.message.reply_text("You (chat id {}) are not authorized to cha"
+                                      "t with this bot".format(update.message.from_user['id']))
             return
 
         if self._telegram_chat_id is not None and self._telegram_chat_id != update.message.chat_id:
             self.get_logger().warn("Changing to different chat_id!")
-            self._telegram_updater.bot.send_message(self._telegram_chat_id,
-                                                    "Lost ROS bridge connection to this chat_id (somebody took over)")
+            self._telegram_updater.bot.send_message(
+                self._telegram_chat_id,
+                "Lost ROS bridge connection to this chat_id (somebody took over)")
         self._telegram_chat_id = update.message.chat_id
 
-        self.get_logger().info("Starting telegram ROS bridge for chat id {}".format(self._telegram_chat_id))
+        self.get_logger().info("Starting telegram ROS bridge for chat id {}"
+                               .format(self._telegram_chat_id))
         update.message.reply_text(
-            "Telegram ROS bridge initialized, only replying to chat_id {} (current). Type /stop to disconnect".format(self._telegram_chat_id))
+            "Telegram ROS bridge initialized, only replying to chat_id {} (current). "
+            "Type /stop to disconnect".format(self._telegram_chat_id))
 
     @telegram_callback
     def _telegram_stop_callback(self, update, context):
@@ -170,7 +199,8 @@ class TelegramBridge(Node):
 
         :config update: Received update event that holds the chat_id and message data
         """
-        self.get_logger().info("Stopping telegram ROS bridge for chat id {}".format(self._telegram_chat_id))
+        self.get_logger().info("Stopping telegram ROS bridge for chat id {}"
+                               .format(self._telegram_chat_id))
         update.message.reply_text("Disconnecting chat_id {}. So long and thanks for all the fish!"
                                   " Type /start to reconnect".format(self._telegram_chat_id))
         self._telegram_chat_id = None
@@ -178,7 +208,9 @@ class TelegramBridge(Node):
     @telegram_callback
     def _telegram_message_callback(self, update, context):
         """
-        Call when a new telegram message has been received. The message is then published into the ROS world
+        Call when a new telegram message has been received.
+
+        The message is then published into the ROS world
 
         :config update: Received update that holds the chat_id and message data
         """
@@ -187,7 +219,7 @@ class TelegramBridge(Node):
     @ros_callback
     def _ros_message_callback(self, msg):
         """
-        Call when a new ROS String message is coming in that should be sent to the telegram conversation.
+        Call when a new ROS String message should be sent to the Telegram session.
 
         :config msg: String message
         """
@@ -218,14 +250,15 @@ class TelegramBridge(Node):
     @ros_callback
     def _ros_image_callback(self, msg):
         """
-        Call when a new ROS String image is coming in that should be sent to the telegram conversation.
+        Call when a new ROS String image should be sent to the telegram session.
 
         :config msg: String image
         """
         cv2_img = self._cv_bridge.imgmsg_to_cv2(msg, "bgr8")
+        caption = msg.header.frame_id if self._caption_as_frame_id else ''
         self._telegram_updater.bot.send_photo(self._telegram_chat_id,
                                               photo=BytesIO(cv2.imencode('.jpg', cv2_img)[1].tobytes()),
-                                              caption=msg.header.frame_id if self._caption_as_frame_id else '')
+                                              caption=caption)
 
     @telegram_callback
     def _telegram_location_callback(self, update, context):
@@ -246,16 +279,17 @@ class TelegramBridge(Node):
     @ros_callback
     def _ros_location_callback(self, msg):
         """
-        Call when a new ROS NavSatFix message is coming in that should be sent to the telegram conversation.
+        Call when a new ROS NavSatFix message should be sent to the telegram session.
 
         :config msg: NavSatFix that the robot wants to share
         """
-        self._telegram_updater.bot.send_location(self._telegram_chat_id, location=Location(msg.longitude, msg.latitude))
+        self._telegram_updater.bot.send_location(self._telegram_chat_id,
+                                                 location=Location(msg.longitude, msg.latitude))
 
     @ros_callback
     def _ros_options_callback(self, msg):
         """
-        Call when a new ROS Options message is coming in that should be sent to the telegram conversation.
+        Call when a new ROS Options message should be sent to the telegram session.
 
         :config msg: Options that the robot wants to share
         """
