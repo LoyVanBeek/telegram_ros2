@@ -106,7 +106,7 @@ class TelegramBridge(Node):
         @functools.wraps(callback_function)
         def wrapper(self, msg):
             if not self._telegram_chat_id:
-                self.get_logger().error("ROS Bridge not initialized, dropping message of type {}".format(type(msg)  ))
+                self.get_logger().error("ROS Bridge not initialized, dropping message of type {}".format(type(msg)))
             else:
                 try:
                     callback_function(self, msg)
@@ -134,9 +134,9 @@ class TelegramBridge(Node):
         """
 
         if not self.is_whitelisted(update.message.chat_id) and not self.is_blacklisted(update.message.chat_id):
-                self.get_logger().warn("Discarding message. User {} not whitelisted".format(update.message.from_user))
-                update.message.reply_text("You (chat id {}) are not authorized to chat with this bot".format(update.message.from_user['id']))
-                return
+            self.get_logger().warn("Discarding message. User {} not whitelisted".format(update.message.from_user))
+            update.message.reply_text("You (chat id {}) are not authorized to chat with this bot".format(update.message.from_user['id']))
+            return
 
         if self._telegram_chat_id is not None and self._telegram_chat_id != update.message.chat_id:
             self.get_logger().warn("Changing to different chat_id!")
@@ -160,7 +160,6 @@ class TelegramBridge(Node):
         update.message.reply_text("Disconnecting chat_id {}. So long and thanks for all the fish!"
                                   " Type /start to reconnect".format(self._telegram_chat_id))
         self._telegram_chat_id = None
-
 
     @telegram_callback
     def _telegram_message_callback(self, update, context):
@@ -249,8 +248,9 @@ class TelegramBridge(Node):
                                                resize_keyboard=True,
                                                one_time_keyboard=True)
         reply = self._telegram_updater.bot.send_message(self._telegram_chat_id,
-                                                text=msg.question,
-                                                reply_markup=options_keyboard)
+                                                        text=msg.question,
+                                                        reply_markup=options_keyboard)
+
 
 def main(args=None):
     rclpy.init(args=args)
