@@ -85,7 +85,7 @@ class TelegramBridge(Node):
 
     def telegram_callback(callback_function):
         """
-        Decorate callbacks from the Telegram API to handle starting the session
+        Decorate callbacks from the Telegram API to handle starting the session.
 
         :config callback_function: A callback function taking a telegram.Bot and a telegram.Update
         :return: Wrapped callback function
@@ -118,7 +118,7 @@ class TelegramBridge(Node):
 
     def ros_callback(callback_function):
         """
-        Decorate callback called by ROS to verify whether we have an active chat id
+        Decorate callback called by ROS to verify whether we have an active chat_id.
 
         In case of exceptions, these will be logged.
 
