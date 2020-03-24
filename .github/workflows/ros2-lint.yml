@@ -1,0 +1,18 @@
+name: ROS2 Lint
+
+on: push
+
+jobs:
+  ament_lint:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+          linter: [copyright, flake8, mypy, pep257, pep8, xmllint]
+    steps:
+    - uses: actions/checkout@v1
+    - uses: ros-tooling/setup-ros@master
+    - uses: ros-tooling/action-ros-lint@master
+      with:
+        linter: ${{ matrix.linter }}
+        package-name: telegram_ros2
