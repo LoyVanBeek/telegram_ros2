@@ -1,0 +1,12 @@
+name: ROS2 CI
+on: push
+
+jobs:
+  ros2_ci:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ros-tooling/action-ros-ci@0.0.13
+      with:
+        package-name: telegram_ros2
+        vcs-repo-file-url: .travis.rosinstall
