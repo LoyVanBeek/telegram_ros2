@@ -21,22 +21,22 @@ THE SOFTWARE.
 """
 
 import functools
+from io import BytesIO
 
 import cv2
 import numpy as np
 
 import rclpy
-from io import BytesIO
 from rclpy.node import Node
 
-from std_msgs.msg import String, Header
-from sensor_msgs.msg import Image, NavSatFix
-from instant_messaging_interfaces.msg import Options
 from cv_bridge import CvBridge
+from instant_messaging_interfaces.msg import Options
+from sensor_msgs.msg import Image, NavSatFix
+from std_msgs.msg import Header, String
 
 from telegram import Location, ReplyKeyboardMarkup
 from telegram.error import TimedOut
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
 
 
 class TelegramBridge(Node):
@@ -318,7 +318,7 @@ class TelegramBridge(Node):
         :config msg: Options that the robot wants to share
         """
         def chunks(l, n):
-            'Yield successive n-sized chunks from l.'
+            """Yield successive n-sized chunks from l."""
             for i in range(0, len(l), n):
                 yield l[i:i + n]
 
