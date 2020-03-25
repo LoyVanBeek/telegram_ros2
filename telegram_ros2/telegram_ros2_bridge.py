@@ -24,13 +24,11 @@ import functools
 from io import BytesIO
 
 import cv2
-import numpy as np
-
-import rclpy
-from rclpy.node import Node
-
 from cv_bridge import CvBridge
 from instant_messaging_interfaces.msg import Options
+import numpy as np
+import rclpy
+from rclpy.node import Node
 from sensor_msgs.msg import Image, NavSatFix
 from std_msgs.msg import Header, String
 
