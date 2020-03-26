@@ -1,19 +1,11 @@
-name: ROS2 CI
+name: Test telegram_ros2
 on: push
 
 jobs:
-  ros2_ci:
+  build_and_test:
     runs-on: ubuntu-18.04
     steps:
-    - uses: actions/checkout@v2
-    - uses: ros-tooling/setup-ros@0.0.14
-      with:
-        required-ros-distributions: eloquent
-    - name: Source ROS environment
-      run: "source /opt/ros/eloquent/setup.bash && env && ros2 --help"
-    - run: vcs --help
-    - name: Check if colcon exists after setup
-      run: colcon info; bash -c colcon info
+    - uses: ros-tooling/setup-ros@0.0.13
     - uses: ros-tooling/action-ros-ci@0.0.13
       with:
         package-name: telegram_ros2
