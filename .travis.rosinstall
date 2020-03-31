@@ -1,0 +1,4 @@
+- git:
+    local-name: instant_messaging_interfaces
+    uri: https://github.com/LoyVanBeek/instant_messaging_interfaces
+    version: master

@@ -1,0 +1,15 @@
+services:
+  - docker
+
+install:
+  - git clone --quiet --depth 1 https://github.com/mikaelarguedas/ros2ci.git .ros2ci
+  - cp .travis.rosinstall .ros2ci/additional_repos.repos
+
+matrix:
+  include:
+    - env: JOB_TYPE=eloquent
+      script: .ros2ci/travis.bash $JOB_TYPE
+    - env: JOB_TYPE=nightly
+      script:
+        - cp .travis.rosinstall .ros2ci/additional_repos.repos
+        - .ros2ci/travis.bash $JOB_TYPE

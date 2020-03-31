@@ -1,0 +1,11 @@
+name: Test telegram_ros2
+on: push
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: ros-tooling/setup-ros@0.0.13
+    - uses: ros-tooling/action-ros-ci@0.0.13
+      with:
+        package-name: telegram_ros2
