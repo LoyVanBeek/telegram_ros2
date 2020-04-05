@@ -31,6 +31,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, NavSatFix
 from std_msgs.msg import Header, String
+from turtlesim.srv import Spawn
 
 from telegram import Location, ReplyKeyboardMarkup
 from telegram.error import TimedOut
@@ -88,9 +89,14 @@ class TelegramBridge(Node):
         self._to_telegram_options_subscriber = self.create_subscription(
             Options, 'options_from_ros', self._ros_options_callback, 10)
 
+        self.spawn = self.create_client(Spawn, 'spawn')  # client
+
     def start(self):
         self._telegram_updater.start_polling()
         self.get_logger().debug('Started polling Telegram updater')
+
+        req = Spawn.Request()
+        self.spawn.call_async(req)
 
     def stop(self):
         self.get_logger().debug('Stopping Telegram updater')
