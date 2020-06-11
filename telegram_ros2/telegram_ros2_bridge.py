@@ -52,55 +52,53 @@ class TelegramBridge(Node):
         self.declare_parameter('api_token')
         self._telegram_updater = Updater(token=self.get_parameter('api_token').value,
                                          use_context=True)
-        self._telegram_updater.dispatcher.add_error_handler(
-            lambda _, update, error:
+        dp = self._telegram_updater.dispatcher
+
+        dp.add_error_handler(lambda _, update, error:
             self.get_logger().error('Update {} caused error {}'.format(update, error)))
 
         self.declare_parameter('whitelist')  # ist of chat IDs we'll accept
         self.declare_parameter('blacklist')  # ist of chat IDs we'll NOT accept
 
-        self._telegram_updater.dispatcher.add_handler(
-            CommandHandler('start', self._telegram_start_callback))
-        self._telegram_updater.dispatcher.add_handler(
-            CommandHandler('stop', self._telegram_stop_callback))
+        dp.add_handler(CommandHandler('start', self._telegram_start_callback))
+        dp.add_handler(CommandHandler('stop', self._telegram_stop_callback))
 
         self._from_telegram_string_publisher = self.create_publisher(
             String, 'message_to_ros', 10)
         self._from_ros_string_subscriber = self.create_subscription(
             String, 'message_from_ros', self._ros_message_callback, 10)
-        self._telegram_updater.dispatcher.add_handler(
-            MessageHandler(Filters.text, self._telegram_message_callback))
+        dp.add_handler(MessageHandler(Filters.text, self._telegram_message_callback))
 
         self._from_telegram_image_publisher = self.create_publisher(
             Image, 'image_to_ros', 10)
         self._from_ros_image_subscriber = self.create_subscription(
             Image, 'image_from_ros', self._ros_image_callback, 10)
-        self._telegram_updater.dispatcher.add_handler(MessageHandler(
-            Filters.photo, self._telegram_image_callback))
+        dp.add_handler(MessageHandler(Filters.photo, self._telegram_image_callback))
 
         self._from_telegram_location_publisher = self.create_publisher(
             NavSatFix, 'location_to_ros', 10)
         self._to_telegram_location_subscriber = self.create_subscription(
             NavSatFix, 'location_from_ros', self._ros_location_callback, 10)
-        self._telegram_updater.dispatcher.add_handler(
-            MessageHandler(Filters.location, self._telegram_location_callback))
+        dp.add_handler(MessageHandler(Filters.location, self._telegram_location_callback))
 
         self._to_telegram_options_subscriber = self.create_subscription(
             Options, 'options_from_ros', self._ros_options_callback, 10)
 
     def start(self):
+        self.get_logger().info('Start polling Telegram updater')
         self._telegram_updater.start_polling()
-        self.get_logger().debug('Started polling Telegram updater')
+        self.get_logger().info('Started polling Telegram updater')
 
     def stop(self):
-        self.get_logger().debug('Stopping Telegram updater')
+        self.get_logger().info('Stopping Telegram updater')
         self._telegram_updater.stop()
-        self.get_logger().debug('Stopped Telegram updater')
+        self.get_logger().info('Stopped Telegram updater')
 
     def __enter__(self):
         return self.start()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.byebye()
         return self.stop()
 
     def telegram_callback(callback_function):
@@ -235,6 +233,7 @@ class TelegramBridge(Node):
 
         :config update: Received update that holds the chat_id and message data
         """
+        self.get_logger().info("Got a message: {}".format(update))
         self._from_telegram_string_publisher.publish(String(data=update.message.text))
 
     @ros_callback
@@ -327,11 +326,17 @@ class TelegramBridge(Node):
                                                 text=msg.question,
                                                 reply_markup=options_keyboard)
 
+    def byebye(self):
+        self.get_logger().info("Saying goodbye. Byebye")
+        self._telegram_updater.bot.send_message(
+            self._telegram_chat_id,
+            "Byebye, I'm shutting down. Don't forget to /start me again later")
+
 
 def main(args=None):
     rclpy.init(args=args)
-
     bridge = TelegramBridge()
+
     with bridge:
         while rclpy.ok():
             try:
