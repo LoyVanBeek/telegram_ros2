@@ -28,7 +28,8 @@ from cv_bridge import CvBridge
 from instant_messaging_interfaces.msg import Options
 import numpy as np
 import rclpy
-from rclpy.node import Node
+from rclpy.node import Node, ParameterDescriptor
+from rcl_interfaces.msg import ParameterType
 from sensor_msgs.msg import Image, NavSatFix
 from std_msgs.msg import Header, String
 
@@ -57,8 +58,17 @@ class TelegramBridge(Node):
         dp.add_error_handler(lambda _, update, error:
             self.get_logger().error('Update {} caused error {}'.format(update, error)))
 
-        self.declare_parameter('whitelist')  # ist of chat IDs we'll accept
-        self.declare_parameter('blacklist')  # ist of chat IDs we'll NOT accept
+        self.declare_parameter('whitelist', [],
+                               ParameterDescriptor(type=ParameterType.PARAMETER_STRING_ARRAY,
+                                                   description="list of chat IDs we'll accept"))
+        self.declare_parameter('blacklist', [],
+                               ParameterDescriptor(type=ParameterType.PARAMETER_STRING_ARRAY,
+                                                   description="list of chat IDs we'll NOT accept"))
+
+        self.get_logger().info('Initial whitelist: {}'
+                               .format(self.get_parameter_or('whitelist').value))
+        self.get_logger().info('Initial blacklist: {}'
+                               .format(self.get_parameter_or('blacklist').value))
 
         dp.add_handler(CommandHandler('start', self._telegram_start_callback))
         dp.add_handler(CommandHandler('stop', self._telegram_stop_callback))
@@ -177,7 +187,13 @@ class TelegramBridge(Node):
         :param chat_id:
         :return:
         """
-        blacklist = self.get_parameter_or('blacklist', []).value
+        self.get_logger().info("Checking whether {} is blacklisted".format(chat_id))
+        # TODO: Getting default params or List params at all doesn't seem to
+        # work in the way I expect at least
+        # blacklist = self.get_parameter_or('blacklist', alternative_value=[]).value
+        blacklist = []
+        blacklisted = chat_id in blacklist
+        self.get_logger().debug("{} in blacklist of length {}: {}".format(chat_id, len(blacklist), blacklisted))
         return chat_id in blacklist
 
     def _telegram_start_callback(self, update, context):
