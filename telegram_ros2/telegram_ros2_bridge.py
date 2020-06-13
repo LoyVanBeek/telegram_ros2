@@ -187,7 +187,7 @@ class TelegramBridge(Node):
         :param chat_id:
         :return:
         """
-        self.get_logger().info("Checking whether {} is blacklisted".format(chat_id))
+        self.get_logger().debug("Checking whether {} is blacklisted".format(chat_id))
         # TODO: Getting default params or List params at all doesn't seem to
         # work in the way I expect at least
         # blacklist = self.get_parameter_or('blacklist', alternative_value=[]).value
@@ -271,10 +271,11 @@ class TelegramBridge(Node):
         """
         self.get_logger().debug('Received image, downloading highest resolution image ...')
         byte_array = update.message.photo[-1].get_file().download_as_bytearray()
-        self.get_logger().debug('Download complete, publishing ...')
+        self.get_logger().debug('Download complete, converting ...')
 
         img = cv2.imdecode(np.asarray(byte_array, dtype=np.uint8), cv2.IMREAD_COLOR)
         msg = self._cv_bridge.cv2_to_imgmsg(img, encoding='bgr8')
+        self.get_logger().debug('Conversion complete, publishing ...')
 
         if self._caption_as_frame_id:
             msg.header.frame_id = update.message.caption
