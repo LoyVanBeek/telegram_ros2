@@ -12,7 +12,7 @@ jobs:
       matrix:
           linter: [flake8, pep257, pep8, xmllint]
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - uses: ros-tooling/setup-ros@master
     - uses: ros-tooling/action-ros-lint@0.0.5
       with:
