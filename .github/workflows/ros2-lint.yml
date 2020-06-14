@@ -6,15 +6,16 @@ jobs:
   ament_lint:
     runs-on: ubuntu-latest
     container:
-      image: ubuntu:bionic
+      image: rostooling/setup-ros-docker:ubuntu-bionic-ros-eloquent-ros-base-latest
+      options: -u root  # setup-node requires root access
     strategy:
       fail-fast: false
       matrix:
           linter: [flake8, pep257, pep8, xmllint]
     steps:
+    - run: sudo chown -R rosbuild:rosbuild .
     - uses: actions/checkout@v2
-    - uses: ros-tooling/setup-ros@master
-    - uses: ros-tooling/action-ros-lint@0.0.5
+    - uses: ros-tooling/action-ros-lint@master
       with:
         linter: ${{ matrix.linter }}
         package-name: telegram_ros2
