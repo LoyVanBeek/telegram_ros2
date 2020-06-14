@@ -59,16 +59,16 @@ class TelegramBridge(Node):
             self.get_logger().error('Update {} caused error {}'.format(update, error)))
 
         self.declare_parameter('whitelist', [],
-                               ParameterDescriptor(type=ParameterType.PARAMETER_STRING_ARRAY,
+                               ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER_ARRAY,
                                                    description="list of chat IDs we'll accept"))
         self.declare_parameter('blacklist', [],
-                               ParameterDescriptor(type=ParameterType.PARAMETER_STRING_ARRAY,
+                               ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER_ARRAY,
                                                    description="list of chat IDs we'll NOT accept"))
 
         self.get_logger().info('Initial whitelist: {}'
-                               .format(self.get_parameter_or('whitelist').value))
+                               .format(self.get_parameter('whitelist').value))
         self.get_logger().info('Initial blacklist: {}'
-                               .format(self.get_parameter_or('blacklist').value))
+                               .format(self.get_parameter('blacklist').value))
 
         dp.add_handler(CommandHandler('start', self._telegram_start_callback))
         dp.add_handler(CommandHandler('stop', self._telegram_stop_callback))
@@ -175,8 +175,13 @@ class TelegramBridge(Node):
         """
         # If the whitelist is empty, it is disabled and anyone is allowed.
         whitelist = self.get_parameter_or('whitelist', []).value
+        self.get_logger().debug("Whitelist: {}".format(whitelist))
         if whitelist:
-            return chat_id in whitelist
+            whitelisted = chat_id in whitelist
+            self.get_logger().debug(
+                "{} in *white*list of length {}: {}"
+                    .format(chat_id, len(whitelist), whitelisted))
+            return whitelisted
         else:
             return True
 
@@ -189,12 +194,16 @@ class TelegramBridge(Node):
         """
         self.get_logger().debug("Checking whether {} is blacklisted".format(chat_id))
         # TODO: Getting default params or List params at all doesn't seem to
-        # work in the way I expect at least
-        # blacklist = self.get_parameter_or('blacklist', alternative_value=[]).value
-        blacklist = []
-        blacklisted = chat_id in blacklist
-        self.get_logger().debug("{} in blacklist of length {}: {}".format(chat_id, len(blacklist), blacklisted))
-        return chat_id in blacklist
+        # work in the way I expect at least. If the value is defined as [] in yaml,
+        # still returns None here
+        blacklist = self.get_parameter_or('blacklist', alternative_value=[]).value
+        if blacklist:
+            self.get_logger().debug("Blacklist: {}".format(blacklist))
+            blacklisted = chat_id in blacklist
+            self.get_logger().debug("{} in *black*list of length {}: {}"
+                                   .format(chat_id, len(blacklist), blacklisted))
+            return blacklisted
+        return False
 
     def _telegram_start_callback(self, update, context):
         """
