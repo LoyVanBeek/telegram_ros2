@@ -4,7 +4,9 @@ on: push
 
 jobs:
   ament_lint:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:bionic
     strategy:
       fail-fast: false
       matrix:
