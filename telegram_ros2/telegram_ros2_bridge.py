@@ -47,10 +47,17 @@ class TelegramBridge(Node):
 
         self._telegram_chat_id = None
 
-        self.declare_parameter('caption_as_frame_id')
+        self.declare_parameter('caption_as_frame_id', False,
+                               ParameterDescriptor(type=ParameterType.PARAMETER_BOOL,
+                                                   description="When receiving a picture, "
+                                                               "put the caption in the frame_id"))
         self._caption_as_frame_id = self.get_parameter_or('caption_as_frame_id', False).value
 
-        self.declare_parameter('api_token')
+        self.declare_parameter('api_token', '',
+                               ParameterDescriptor(type=ParameterType.PARAMETER_STRING,
+                                                   description="Telegram API token. "
+                                                               "Get your own via "
+                                                               "https://t.me/botfather"))
         self._telegram_updater = Updater(token=self.get_parameter('api_token').value,
                                          use_context=True)
         dp = self._telegram_updater.dispatcher
