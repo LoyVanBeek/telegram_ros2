@@ -56,14 +56,15 @@ class TelegramBridge(Node):
         dp = self._telegram_updater.dispatcher
 
         dp.add_error_handler(lambda _, update, error:
-            self.get_logger().error('Update {} caused error {}'.format(update, error)))
+                             self.get_logger().error(
+                                 'Update {} caused error {}'.format(update, error)))
 
         self.declare_parameter('whitelist', [],
                                ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER_ARRAY,
                                                    description="list of chat IDs we'll accept"))
         self.declare_parameter('blacklist', [],
                                ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER_ARRAY,
-                                                   description="list of chat IDs we'll NOT accept"))
+                                                   description="list of chat IDs we won't accept"))
 
         self.get_logger().info('Initial whitelist: {}'
                                .format(self.get_parameter('whitelist').value))
@@ -179,8 +180,7 @@ class TelegramBridge(Node):
         if whitelist:
             whitelisted = chat_id in whitelist
             self.get_logger().debug(
-                "{} in *white*list of length {}: {}"
-                    .format(chat_id, len(whitelist), whitelisted))
+                "{} in *white*list of length {}: {}".format(chat_id, len(whitelist), whitelisted))
             return whitelisted
         else:
             return True
@@ -200,8 +200,8 @@ class TelegramBridge(Node):
         if blacklist:
             self.get_logger().debug("Blacklist: {}".format(blacklist))
             blacklisted = chat_id in blacklist
-            self.get_logger().debug("{} in *black*list of length {}: {}"
-                                   .format(chat_id, len(blacklist), blacklisted))
+            self.get_logger().debug(
+                "{} in *black*list of length {}: {}".format(chat_id, len(blacklist), blacklisted))
             return blacklisted
         return False
 
