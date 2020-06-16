@@ -5,6 +5,7 @@ Bridge the Telegram chat service to ROS2. Send messages, images, locations to an
 ```bash
 mkdir -p ~/dev_ws/src
 cd ~/dev_ws/src
+git clone https://github.com/LoyVanBeek/instant_messaging_interfaces.git
 git clone https://github.com/LoyVanBeek/telegram_ros2.git
 ```
 
