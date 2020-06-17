@@ -4,14 +4,17 @@ on: push
 
 jobs:
   ament_lint:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-bionic-ros-eloquent-ros-base-latest
+      options: -u root  # setup-node requires root access
     strategy:
       fail-fast: false
       matrix:
-          linter: [flake8, pep257, pep8, xmllint]
+          linter: [pep257, pep8, xmllint]
     steps:
-    - uses: actions/checkout@v1
-    - uses: ros-tooling/setup-ros@master
+    - run: sudo chown -R rosbuild:rosbuild .
+    - uses: actions/checkout@v2
     - uses: ros-tooling/action-ros-lint@master
       with:
         linter: ${{ matrix.linter }}

@@ -27,9 +27,9 @@ import cv2
 from cv_bridge import CvBridge
 from instant_messaging_interfaces.msg import Options
 import numpy as np
+from rcl_interfaces.msg import ParameterType
 import rclpy
 from rclpy.node import Node, ParameterDescriptor
-from rcl_interfaces.msg import ParameterType
 from sensor_msgs.msg import Image, NavSatFix
 from std_msgs.msg import Header, String
 
@@ -49,15 +49,15 @@ class TelegramBridge(Node):
 
         self.declare_parameter('caption_as_frame_id', False,
                                ParameterDescriptor(type=ParameterType.PARAMETER_BOOL,
-                                                   description="When receiving a picture, "
-                                                               "put the caption in the frame_id"))
+                                                   description='When receiving a picture, '
+                                                               'put the caption in the frame_id'))
         self._caption_as_frame_id = self.get_parameter_or('caption_as_frame_id', False).value
 
         self.declare_parameter('api_token', '',
                                ParameterDescriptor(type=ParameterType.PARAMETER_STRING,
-                                                   description="Telegram API token. "
-                                                               "Get your own via "
-                                                               "https://t.me/botfather"))
+                                                   description='Telegram API token. '
+                                                               'Get your own via '
+                                                               'https://t.me/botfather'))
         self._telegram_updater = Updater(token=self.get_parameter('api_token').value,
                                          use_context=True)
         dp = self._telegram_updater.dispatcher
@@ -68,10 +68,10 @@ class TelegramBridge(Node):
 
         self.declare_parameter('whitelist', [],
                                ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER_ARRAY,
-                                                   description="list of chat IDs we'll accept"))
+                                                   description='list of accepted chat IDs'))
         self.declare_parameter('blacklist', [],
                                ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER_ARRAY,
-                                                   description="list of chat IDs we won't accept"))
+                                                   description='list of unaccepted chat IDs'))
 
         self.get_logger().info('Initial whitelist: {}'
                                .format(self.get_parameter('whitelist').value))
@@ -183,11 +183,11 @@ class TelegramBridge(Node):
         """
         # If the whitelist is empty, it is disabled and anyone is allowed.
         whitelist = self.get_parameter_or('whitelist', []).value
-        self.get_logger().debug("Whitelist: {}".format(whitelist))
+        self.get_logger().debug('Whitelist: {}'.format(whitelist))
         if whitelist:
             whitelisted = chat_id in whitelist
             self.get_logger().debug(
-                "{} in *white*list of length {}: {}".format(chat_id, len(whitelist), whitelisted))
+                '{} in *white*list of length {}: {}'.format(chat_id, len(whitelist), whitelisted))
             return whitelisted
         else:
             return True
@@ -199,16 +199,16 @@ class TelegramBridge(Node):
         :param chat_id:
         :return:
         """
-        self.get_logger().debug("Checking whether {} is blacklisted".format(chat_id))
+        self.get_logger().debug('Checking whether {} is blacklisted'.format(chat_id))
         # TODO: Getting default params or List params at all doesn't seem to
         # work in the way I expect at least. If the value is defined as [] in yaml,
         # still returns None here
         blacklist = self.get_parameter_or('blacklist', alternative_value=[]).value
         if blacklist:
-            self.get_logger().debug("Blacklist: {}".format(blacklist))
+            self.get_logger().debug('Blacklist: {}'.format(blacklist))
             blacklisted = chat_id in blacklist
             self.get_logger().debug(
-                "{} in *black*list of length {}: {}".format(chat_id, len(blacklist), blacklisted))
+                '{} in *black*list of length {}: {}'.format(chat_id, len(blacklist), blacklisted))
             return blacklisted
         return False
 
@@ -265,7 +265,7 @@ class TelegramBridge(Node):
 
         :config update: Received update that holds the chat_id and message data
         """
-        self.get_logger().info("Got a message: {}".format(update))
+        self.get_logger().info('Got a message: {}'.format(update))
         self._from_telegram_string_publisher.publish(String(data=update.message.text))
 
     @ros_callback
@@ -360,7 +360,7 @@ class TelegramBridge(Node):
                                                 reply_markup=options_keyboard)
 
     def byebye(self):
-        self.get_logger().info("Saying goodbye. Byebye")
+        self.get_logger().info('Saying goodbye. Byebye')
         self._telegram_updater.bot.send_message(
             self._telegram_chat_id,
             "Byebye, I'm shutting down. Don't forget to /start me again later")
