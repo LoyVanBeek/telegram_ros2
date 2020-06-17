@@ -1,3 +1,5 @@
+![ROS2 Lint](https://github.com/LoyVanBeek/telegram_ros2/workflows/ROS2%20Lint/badge.svg) 
+
 # telegram_ros2
 Bridge the Telegram chat service to ROS2. Send messages, images, locations to and from ROS2
 
