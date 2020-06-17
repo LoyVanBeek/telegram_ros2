@@ -363,7 +363,7 @@ class TelegramBridge(Node):
         self.get_logger().info('Saying goodbye. Byebye')
         self._telegram_updater.bot.send_message(
             self._telegram_chat_id,
-            'Byebye, I\'m shutting down. Don\'t forget to /start me again later')
+            "Byebye, I'm shutting down. Don't forget to /start me again later")
 
 
 def main(args=None):
