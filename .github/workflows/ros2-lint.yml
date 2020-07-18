@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-          linter: [pep257, pep8, xmllint]
+          linter: [flake8, pep257, pep8, xmllint]
     steps:
     - run: sudo chown -R rosbuild:rosbuild .
     - uses: actions/checkout@v2
