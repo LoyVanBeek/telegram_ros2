@@ -3,7 +3,14 @@
 # telegram_ros2
 Bridge the Telegram chat service to ROS2. Send messages, images, locations to and from ROS2
 
-## Useage
+## Requirements
+Install the Python Telegram Bot API (only working up to version 13.15):
+
+```bash
+pip3 install python-telegram-bot==13.15
+```
+
+## Usage
 ```bash
 mkdir -p ~/dev_ws/src
 cd ~/dev_ws/src
@@ -25,7 +32,7 @@ ros2 launch telegram_ros2 telegram_bridge.launch.py
 ```
 
 Now, chat with your bot via Telegram. 
-It'll report you need to first send a `/start` command (ince this bot can currently only talk to 1 person at a time)
+It'll report you need to first send a `/start` command (since this bot can currently only talk to 1 person at a time)
 So, enter `/start` and start chatting. 
 
 ## Topics
