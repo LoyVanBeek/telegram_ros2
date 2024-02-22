@@ -33,8 +33,8 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='telegram_ros2',
-            node_executable='telegram_ros2_bridge',
-            node_name='telegram_bridge',
+            executable='telegram_ros2_bridge',
+            name='telegram_bridge',
             parameters=[parameters_file_path]
         )
     ])
