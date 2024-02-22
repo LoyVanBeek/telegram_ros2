@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 """
 Copyright 2020 Loy van Beek.
 
@@ -66,17 +68,17 @@ class TelegramBridge(Node):
                              self.get_logger().error(
                                  'Update {} caused error {}'.format(update, error)))
 
-        self.declare_parameter('whitelist', [],
-                               ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER_ARRAY,
-                                                   description='list of accepted chat IDs'))
-        self.declare_parameter('blacklist', [],
-                               ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER_ARRAY,
-                                                   description='list of unaccepted chat IDs'))
+        # self.declare_parameter('whitelist', [],
+        #                        ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER_ARRAY,
+        #                                            description='list of accepted chat IDs'))
+        # self.declare_parameter('blacklist', [],
+        #                        ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER_ARRAY,
+        #                                            description='list of unaccepted chat IDs'))
 
-        self.get_logger().info('Initial whitelist: {}'
-                               .format(self.get_parameter('whitelist').value))
-        self.get_logger().info('Initial blacklist: {}'
-                               .format(self.get_parameter('blacklist').value))
+        # self.get_logger().info('Initial whitelist: {}'
+        #                        .format(self.get_parameter('whitelist').value))
+        # self.get_logger().info('Initial blacklist: {}'
+        #                        .format(self.get_parameter('blacklist').value))
 
         dp.add_handler(CommandHandler('start', self._telegram_start_callback))
         dp.add_handler(CommandHandler('stop', self._telegram_stop_callback))
@@ -130,25 +132,25 @@ class TelegramBridge(Node):
         def wrapper(self, update, context):
             self.get_logger().debug('Incoming update from telegram: {}'.format(update))
 
-            if self.is_blacklisted(update.message.chat_id):
-                self.get_logger().warn(
-                    'Discarding message. User {} is blacklisted'.format(update.message.from_user))
+            # if self.is_blacklisted(update.message.chat_id):
+            #     self.get_logger().warn(
+            #         'Discarding message. User {} is blacklisted'.format(update.message.from_user))
+            #     update.message.reply_text(
+            #         'You (chat id {}) are not authorized to chat with this bot'.format(
+            #             update.message.from_user['id']))
+            #     return
+            # else:
+            if self._telegram_chat_id is None:
+                self.get_logger().warn('Discarding message. No active chat_id.')
                 update.message.reply_text(
-                    'You (chat id {}) are not authorized to chat with this bot'.format(
-                        update.message.from_user['id']))
-                return
+                    'ROS Bridge not initialized. Type /start to set-up ROS bridge')
+            elif self._telegram_chat_id != update.message.chat_id:
+                self.get_logger().warn('Discarding message. Invalid chat_id')
+                update.message.reply_text(
+                    'ROS Bridge initialized to another chat_id. '
+                    'Type /start to connect to this chat_id')
             else:
-                if self._telegram_chat_id is None:
-                    self.get_logger().warn('Discarding message. No active chat_id.')
-                    update.message.reply_text(
-                        'ROS Bridge not initialized. Type /start to set-up ROS bridge')
-                elif self._telegram_chat_id != update.message.chat_id:
-                    self.get_logger().warn('Discarding message. Invalid chat_id')
-                    update.message.reply_text(
-                        'ROS Bridge initialized to another chat_id. '
-                        'Type /start to connect to this chat_id')
-                else:
-                    return callback_function(self, update, context)
+                return callback_function(self, update, context)
 
         return wrapper
 
@@ -174,43 +176,43 @@ class TelegramBridge(Node):
 
         return wrapper
 
-    def is_whitelisted(self, chat_id):
-        """
-        Check if the chat_id is whitelisted and allowed to send messages to us.
+    # def is_whitelisted(self, chat_id):
+    #     """
+    #     Check if the chat_id is whitelisted and allowed to send messages to us.
 
-        :param chat_id:
-        :return:
-        """
-        # If the whitelist is empty, it is disabled and anyone is allowed.
-        whitelist = self.get_parameter_or('whitelist', []).value
-        self.get_logger().debug('Whitelist: {}'.format(whitelist))
-        if whitelist:
-            whitelisted = chat_id in whitelist
-            self.get_logger().debug(
-                '{} in *white*list of length {}: {}'.format(chat_id, len(whitelist), whitelisted))
-            return whitelisted
-        else:
-            return True
+    #     :param chat_id:
+    #     :return:
+    #     """
+    #     # If the whitelist is empty, it is disabled and anyone is allowed.
+    #     whitelist = self.get_parameter_or('whitelist', []).value
+    #     self.get_logger().debug('Whitelist: {}'.format(whitelist))
+    #     if whitelist:
+    #         whitelisted = chat_id in whitelist
+    #         self.get_logger().debug(
+    #             '{} in *white*list of length {}: {}'.format(chat_id, len(whitelist), whitelisted))
+    #         return whitelisted
+    #     else:
+    #         return True
 
-    def is_blacklisted(self, chat_id):
-        """
-        Check if the chat_id is blacklisted and blocks from sending messages to us.
+    # def is_blacklisted(self, chat_id):
+    #     """
+    #     Check if the chat_id is blacklisted and blocks from sending messages to us.
 
-        :param chat_id:
-        :return:
-        """
-        self.get_logger().debug('Checking whether {} is blacklisted'.format(chat_id))
-        # TODO: Getting default params or List params at all doesn't seem to
-        # work in the way I expect at least. If the value is defined as [] in yaml,
-        # still returns None here
-        blacklist = self.get_parameter_or('blacklist', alternative_value=[]).value
-        if blacklist:
-            self.get_logger().debug('Blacklist: {}'.format(blacklist))
-            blacklisted = chat_id in blacklist
-            self.get_logger().debug(
-                '{} in *black*list of length {}: {}'.format(chat_id, len(blacklist), blacklisted))
-            return blacklisted
-        return False
+    #     :param chat_id:
+    #     :return:
+    #     """
+    #     self.get_logger().debug('Checking whether {} is blacklisted'.format(chat_id))
+    #     # TODO: Getting default params or List params at all doesn't seem to
+    #     # work in the way I expect at least. If the value is defined as [] in yaml,
+    #     # still returns None here
+    #     blacklist = self.get_parameter_or('blacklist', alternative_value=[]).value
+    #     if blacklist:
+    #         self.get_logger().debug('Blacklist: {}'.format(blacklist))
+    #         blacklisted = chat_id in blacklist
+    #         self.get_logger().debug(
+    #             '{} in *black*list of length {}: {}'.format(chat_id, len(blacklist), blacklisted))
+    #         return blacklisted
+    #     return False
 
     def _telegram_start_callback(self, update, context):
         """
@@ -220,13 +222,13 @@ class TelegramBridge(Node):
 
         :config update: Received update event that holds the chat_id and message data
         """
-        if not self.is_whitelisted(update.message.chat_id) and \
-                not self.is_blacklisted(update.message.chat_id):
-            self.get_logger().warn('Discarding message. User {} not whitelisted'
-                                   .format(update.message.from_user))
-            update.message.reply_text('You (chat id {}) are not authorized to cha'
-                                      't with this bot'.format(update.message.from_user['id']))
-            return
+        # if not self.is_whitelisted(update.message.chat_id) and \
+        #         not self.is_blacklisted(update.message.chat_id):
+        #     self.get_logger().warn('Discarding message. User {} not whitelisted'
+        #                            .format(update.message.from_user))
+        #     update.message.reply_text('You (chat id {}) are not authorized to cha'
+        #                               't with this bot'.format(update.message.from_user['id']))
+        #     return
 
         if self._telegram_chat_id is not None and self._telegram_chat_id != update.message.chat_id:
             self.get_logger().warn('Changing to different chat_id!')
